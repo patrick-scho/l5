@@ -2,11 +2,12 @@
 #include "parse.h"
 #include "interp.h"
 #include "log.h"
+#include "print.h"
 
 #include <iostream>
 #include <fstream>
 
-void print_usage(char *arg)
+void printUsage(char *arg)
 {
   std::cout << "Usage: " << arg << " <file>" << std::endl;
 }
@@ -15,7 +16,7 @@ int main(int argc, char **argv)
 {
   if (argc != 2)
   {
-    print_usage(argv[0]);
+    printUsage(argv[0]);
     return 1;
   }
 
@@ -31,7 +32,11 @@ int main(int argc, char **argv)
 
   ifs.close();
 
-  auto ast = Parse::parse(tokens);
+  printTokens(tokens);
+
+  auto ast = Parse::parseRoot(tokens);
+
+  printNode(ast);
 
   //auto result = interp::interp(ast);
 
