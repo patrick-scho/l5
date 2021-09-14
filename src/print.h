@@ -3,6 +3,7 @@
 #include "parse.h"
 #include "lex.h"
 
+#include <variant>
 #include <vector>
 #include <iostream>
 #include <iomanip>
@@ -29,41 +30,46 @@ void printTokens(const std::vector<Lex::Token> & tokens)
   }
 }
 
+void printValue(const Parse::Value & value)
+{
+  if (std::holds_alternative<Parse::Word>(value))
+    std::cout << "W: " << std::get<Parse::Word>(value).val;
+  if (std::holds_alternative<Parse::String>(value))
+    std::cout << "S: " << std::get<Parse::String>(value).val;
+  if (std::holds_alternative<Parse::Integer>(value))
+    std::cout << "I: " << std::get<Parse::Integer>(value).val;
+}
+
 void printNode(const Parse::Node & node)
 {
-  switch (node.type)
+  printValue(node.value);
+
+  if (node.word.has_value())
   {
-  case Parse::NodeType::Root:
-    for (auto c : node.children)
+    std::cout << "[";
+    printValue(node.word.value());
+    std::cout << "]";
+  }
+
+  if (node.parens.has_value())
+  {
+    std::cout << "(";
+    for (auto n : node.parens.value())
     {
-      printNode(c);
-      std::cout << std::endl;
-    }
-    break;
-  case Parse::NodeType::FuncCall:
-    std::cout << "FuncCall (" << node.info << "): ";
-    for (auto c : node.children)
-    {
-      printNode(c);
+      printNode(n);
       std::cout << ", ";
     }
-    break;
-  case Parse::NodeType::If:
-    std::cout << "If ("; printNode(node.children[0]); std::cout << ") {\n";
-    for (int i = 1; i < node.children.size(); i++)
+    std::cout << ")";
+  }
+  if (node.braces.has_value())
+  {
+    std::cout << "{\n";
+    for (auto n : node.braces.value())
     {
-      printNode(node.children[i]);
-      std::cout << std::endl;
+      printNode(n);
+      std::cout << "\n";
     }
-    std::cout << "}";
-    break;
-  case Parse::NodeType::Integer:
-    std::cout << node.info;
-    break;
-  case Parse::NodeType::Operator:
-    printNode(node.children[0]);
-    std::cout << " " << node.info << " ";
-    printNode(node.children[1]);
-    break;
+    std::cout << "}\n";
   }
 }
+

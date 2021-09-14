@@ -14,11 +14,23 @@ namespace Lex
     unsigned int col = 0;
   };
 
+  const char punctuation[] = {
+    '(',
+    ')',
+    '[',
+    ']',
+    '{',
+    '}',
+    ',',
+    ';',
+    ':',
+  };
   enum class TokenType
   {
-    Word, Integer, Operator,
-    ParenL, ParenR, BracketL, BracketR, BraceL, BraceR,
-    Comma, Semicolon
+    ParenL , ParenR, BracketL, BracketR, BraceL, BraceR,
+    Comma, Semicolon, Colon,
+    Word, Integer, Operator, String,
+    None,
   };
   struct Token
   {
@@ -56,31 +68,18 @@ namespace Lex
 
   bool isPunctuation(int c)
   {
-    return
-      c == '(' ||
-      c == ')' ||
-      c == '[' ||
-      c == ']' ||
-      c == '{' ||
-      c == '}' ||
-      c == ',' ||
-      c == ';';
+    for (char p : punctuation)
+      if (c == p)
+        return true;
+    return false;
   }
 
   Token getPunctuationToken(int c)
   {
     Token result;
-    switch (c)
-    {
-    case '(': result.type = TokenType::ParenL;    break;
-    case ')': result.type = TokenType::ParenR;    break;
-    case '[': result.type = TokenType::BracketL;  break;
-    case ']': result.type = TokenType::BracketR;  break;
-    case '{': result.type = TokenType::BraceL;    break;
-    case '}': result.type = TokenType::BraceR;    break;
-    case ',': result.type = TokenType::Comma;     break;
-    case ';': result.type = TokenType::Semicolon; break;
-    }
+    for (int i = 0; i < sizeof(punctuation); i++)
+      if (c == punctuation[i])
+        result.type = (TokenType)i;
     return result;
   }
 
@@ -89,7 +88,7 @@ namespace Lex
   std::vector<Token> lex(std::istream & in)
   {
     enum class LexState {
-      Neutral, Word, Number, Operator
+      Neutral, Word, Number, Operator, String,
     };
 
     Location currentLoc;
@@ -120,6 +119,20 @@ namespace Lex
         else
           state = LexState::Neutral;
       }
+      else if (state == LexState::String)
+      {
+        if ('"' != c)
+        {
+          result.back().str += c;
+        }
+        else
+        {
+          if (in.get(c))
+            state = LexState::Neutral;
+          else
+            break;
+        }
+      }
       
       if (state == LexState::Neutral)
       {
@@ -146,6 +159,14 @@ namespace Lex
           newToken.type = TokenType::Integer;
           newToken.loc = currentLoc;
           newToken.str += c;
+          result.push_back(newToken);
+        }
+        else if ('"' == c)
+        {
+          state = LexState::String;
+          Token newToken;
+          newToken.type = TokenType::String;
+          newToken.loc = currentLoc;
           result.push_back(newToken);
         }
         else if (! isWhitespace(c))

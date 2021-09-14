@@ -1,141 +1,119 @@
 #pragma once
 
 #include "lex.h"
+#include "log.h"
 
 #include <vector>
 #include <memory>
+#include <variant>
+#include <optional>
 
-template<typename T>
-using ptr = std::unique_ptr<T>;
 
 namespace Parse
 {
-  enum class NodeType
-  {
-    Root, If, Operator, FuncCall, Integer
-  };
+  struct Word { std::string val; };
+  struct String { std::string val; };
+  struct Integer { long val; };
+  
+  using Value = std::variant<
+    Word,
+    String,
+    Integer
+  >;
+
   struct Node
   {
-    NodeType type;
+    Value value;
 
-    Node *parent;
-    std::vector<Node> children;
+    std::optional<Value> word;
 
-    std::string info;
+    std::optional<std::vector<Node>> parens;
+    std::optional<std::vector<Node>> braces;
   };
 
-  Node parseNode(const std::vector<Lex::Token> & tokens, int & index);
-
-  Node parseFuncCall(const std::vector<Lex::Token> & tokens, int & index)
+  Lex::Token getNextToken(const std::vector<Lex::Token> & tokens, int & index)
   {
-    Node result;
-    result.type = NodeType::FuncCall;
-    result.info = tokens[index].str;
-    index += 2;
-
-    if (tokens[index].type == Lex::TokenType::ParenR)
-      return result;
-
-    while (true)
-    {
-      result.children.push_back(
-        parseNode(tokens, index)
-      );
-      if (tokens[index+1].type == Lex::TokenType::ParenR)
-      {
-        index++;
-        break;
-      }
-      else
-      {
-        index += 2;
-      }
-    }
-
-    return result;
+    if (index >= tokens.size())
+      return Lex::Token { Lex::TokenType::None };
+    return tokens[index];
   }
 
-  Node parseIf(const std::vector<Lex::Token> & tokens, int & index)
+  Value parseValue(Lex::Token t)
   {
-    Node result;
-    result.type = NodeType::If;
+    if (t.type == Lex::TokenType::Word)
+      return Word { t.str };
+    else if (t.type == Lex::TokenType::String)
+      return String { t.str };
+    else if (t.type == Lex::TokenType::Integer)
+      return Integer { std::atol(t.str.c_str()) };
+    else
+      Log::error("Expected Value");
 
-    index += 2;
-
-    result.children.push_back(
-      parseNode(tokens, index)
-    );
-
-    index += 3;
-
-    while (tokens[index].type != Lex::TokenType::BraceR)
-    {
-      result.children.push_back(
-        parseNode(tokens, index)
-      );
-      index++;
-    }
-
-    return result;
-  }
-
-  Node parseInteger(const std::vector<Lex::Token> & tokens, int & index)
-  {
-    Node result;
-    result.type = NodeType::Integer;
-    result.info = tokens[index].str;
-    return result;
+    return Value();
   }
 
   Node parseNode(const std::vector<Lex::Token> & tokens, int & index)
   {
     Node result;
 
-    auto & t = tokens[index];
+    auto t = tokens[index];
 
-    using Lex::TokenType;
+    result.value = parseValue(t);
 
-    if (t.type == TokenType::Word)
-    {
-      if (t.str == "if")
-      {
-        result = parseIf(tokens, index);
-      }
-      else if (tokens[index+1].type == TokenType::ParenL)
-      {
-        result = parseFuncCall(tokens, index);
-      }
-    }
-    else if (t.type == TokenType::Integer)
-    {
-      result = parseInteger(tokens, index);
-    }
+    index++;
+    t = getNextToken(tokens, index);
 
-    while (tokens[index+1].type == TokenType::Operator)
+    if (t.type == Lex::TokenType::Colon)
     {
-      Node tmp = result;
-      result.type = NodeType::Operator;
-      result.children.push_back(tmp);
       index++;
-      result.info = tokens[index].str;
+      t = getNextToken(tokens, index);
+
+      result.word = parseValue(t);
       index++;
-      result.children.push_back(parseNode(tokens, index));
     }
+
+    t = getNextToken(tokens, index);
+    
+    if (t.type == Lex::TokenType::ParenL)
+    {
+      index++;
+      t = getNextToken(tokens, index);
+  
+      result.parens.emplace();
+      while (tokens[index].type != Lex::TokenType::ParenR)
+        result.parens->push_back(parseNode(tokens, index));
+  
+      index++;
+    }
+
+    t = getNextToken(tokens, index);
+    
+    if (t.type == Lex::TokenType::BraceL)
+    {
+      index++;
+      t = getNextToken(tokens, index);
+
+      result.braces.emplace();
+      while (tokens[index].type != Lex::TokenType::BraceR)
+        result.braces->push_back(parseNode(tokens, index));
+      
+      index++;
+    }
+
+
 
     return result;
   }
 
-  Node parseRoot(const std::vector<Lex::Token> & tokens)
+  std::vector<Node> parseNodes(const std::vector<Lex::Token> & tokens)
   {
-    Node result;
-    result.type = NodeType::Root;
-    result.parent = nullptr;
+    std::vector<Node> result;
 
-    for (int i = 0; i < tokens.size(); i++)
+    int i = 0;
+    while (i < tokens.size())
     {
-      result.children.push_back(
-        parseNode(tokens, i)
-      );
+      auto node = Parse::parseNode(tokens, i);
+      result.push_back(node);
     }
 
     return result;

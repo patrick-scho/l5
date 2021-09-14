@@ -32,11 +32,14 @@ int main(int argc, char **argv)
 
   ifs.close();
 
-  printTokens(tokens);
+  //printTokens(tokens);
 
-  auto ast = Parse::parseRoot(tokens);
-
-  printNode(ast);
+  auto nodes = Parse::parseNodes(tokens);
+  for (auto node : nodes)
+  {
+    printNode(node);
+    std::cout << "\n";
+  }
 
   //auto result = interp::interp(ast);
 
