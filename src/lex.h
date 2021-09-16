@@ -14,6 +14,17 @@ namespace Lex
     unsigned int col = 0;
   };
 
+  void advanceLoc(Location & loc, char c)
+  {
+    loc.index++;
+    loc.col++;
+    if (c == '\n')
+    {
+      loc.row++;
+      loc.col = 0;
+    }
+  }
+
   const char punctuation[] = {
     '(',
     ')',
@@ -87,108 +98,96 @@ namespace Lex
 
   std::vector<Token> lex(std::istream & in)
   {
-    enum class LexState {
-      Neutral, Word, Number, Operator, String,
-    };
-
     Location currentLoc;
     std::vector<Token> result;
-    LexState state = LexState::Neutral;
 
     char c;
-    while (in.get(c))
+    in.get(c);
+
+    while (in.good())
     {
-      if (state == LexState::Number)
+      if (isPunctuation(c))
       {
-        if (isNumber(c))
-          result.back().str += c;
-        else
-          state = LexState::Neutral;
+        Token newToken = getPunctuationToken(c);
+        newToken.loc = currentLoc;
+        result.push_back(newToken);
+        
+        if (! in.get(c))
+          break;
+        advanceLoc(currentLoc, c);
       }
-      else if (state == LexState::Word)
+      else if (isFirstWord(c))
       {
-        if (isWord(c))
-          result.back().str += c;
-        else
-          state = LexState::Neutral;
-      }
-      else if (state == LexState::Operator)
-      {
-        if (! isWord(c) && ! isWhitespace(c) && ! isPunctuation(c))
-          result.back().str += c;
-        else
-          state = LexState::Neutral;
-      }
-      else if (state == LexState::String)
-      {
-        if ('"' != c)
+        Token newToken;
+        newToken.type = TokenType::Word;
+        newToken.loc = currentLoc;
+        newToken.str += c;
+        while (in.get(c))
         {
-          result.back().str += c;
-        }
-        else
-        {
-          if (in.get(c))
-            state = LexState::Neutral;
+          advanceLoc(currentLoc, c);
+          if (isWord(c))
+            newToken.str += c;
           else
             break;
         }
+        result.push_back(newToken);
       }
-      
-      if (state == LexState::Neutral)
+      else if (isNumber(c))
       {
-        if (isPunctuation(c))
+        Token newToken;
+        newToken.type = TokenType::Integer;
+        newToken.loc = currentLoc;
+        newToken.str += c;
+        while (in.get(c))
         {
-          state = LexState::Neutral;
-          Token newToken = getPunctuationToken(c);
-          newToken.loc = currentLoc;
-          result.push_back(newToken);
+          advanceLoc(currentLoc, c);
+          if (isNumber(c))
+            newToken.str += c;
+          else
+            break;
         }
-        else if (isFirstWord(c))
-        {
-          state = LexState::Word;
-          Token newToken;
-          newToken.type = TokenType::Word;
-          newToken.loc = currentLoc;
-          newToken.str += c;
-          result.push_back(newToken);
-        }
-        else if (isNumber(c))
-        {
-          state = LexState::Number;
-          Token newToken;
-          newToken.type = TokenType::Integer;
-          newToken.loc = currentLoc;
-          newToken.str += c;
-          result.push_back(newToken);
-        }
-        else if ('"' == c)
-        {
-          state = LexState::String;
-          Token newToken;
-          newToken.type = TokenType::String;
-          newToken.loc = currentLoc;
-          result.push_back(newToken);
-        }
-        else if (! isWhitespace(c))
-        {
-          state = LexState::Operator;
-          Token newToken;
-          newToken.type = TokenType::Operator;
-          newToken.loc = currentLoc;
-          newToken.str += c;
-          result.push_back(newToken);
-        }
+        result.push_back(newToken);
       }
-
-      if (isWhitespace(c))
-        state = LexState::Neutral;
-
-      currentLoc.index++;
-      currentLoc.col++;
-      if (c == '\n')
+      else if ('"' == c)
       {
-        currentLoc.row++;
-        currentLoc.col = 0;
+        Token newToken;
+        newToken.type = TokenType::String;
+        newToken.loc = currentLoc;
+        newToken.str += c;
+        while (in.get(c))
+        {
+          advanceLoc(currentLoc, c);
+          newToken.str += c;
+          if ('"' == c)
+            break;
+        }
+        if (! in.get(c))
+          break;
+        advanceLoc(currentLoc, c);
+        result.push_back(newToken);
+      }
+      else if (! isWhitespace(c))
+      {
+        Token newToken;
+        newToken.type = TokenType::Operator;
+        newToken.loc = currentLoc;
+        newToken.str += c;
+        
+        while (in.get(c))
+        {
+          advanceLoc(currentLoc, c);
+          if (! isWhitespace(c))
+            newToken.str += c;
+          else
+            break;
+        }
+        result.push_back(newToken);
+      }
+      else
+      {
+        advanceLoc(currentLoc, c);
+        if (! in.get(c))
+          break;
       }
     }
 
