@@ -118,20 +118,23 @@ namespace Parse
       t = getNextToken(tokens, index);
     }
 
-    while (parseOp && t.type == Lex::TokenType::Operator)
+    if (parseOp)
     {
-      Node l = result;
-      
-      index++;
-      Node r = parseNode(tokens, index, false);
+      while (t.type == Lex::TokenType::Operator)
+      {
+        Node l = result;
+        
+        index++;
+        Node r = parseNode(tokens, index, false);
 
-      result = Node();
-      result.primary = parseValue(t);
-      result.parens.emplace();
-      result.parens->push_back(l);
-      result.parens->push_back(r);
+        result = Node();
+        result.primary = parseValue(t);
+        result.parens.emplace();
+        result.parens->push_back(l);
+        result.parens->push_back(r);
 
-      t = tokens[index];
+        t = tokens[index];
+      }
     }
 
     return result;

@@ -166,7 +166,51 @@ namespace Lex
         advanceLoc(currentLoc, c);
         result.push_back(newToken);
       }
-      else if (! isWhitespace(c))
+      else if ('/' == c && '/' == in.peek())
+      {
+        in.get(c);
+        advanceLoc(currentLoc, c);
+        while (in.get(c))
+        {
+          advanceLoc(currentLoc, c);
+          if (c == '\n')
+            break;
+        }
+      }
+      else if ('/' == c && '*' == in.peek())
+      {
+        int level = 1;
+
+        in.get(c);
+        advanceLoc(currentLoc, c);
+        while (in.get(c))
+        {
+          advanceLoc(currentLoc, c);
+          if ('*' == c && '/' == in.peek() ||
+              '/' == c && '*' == in.peek())
+          {
+            if ('/' == c)
+              level++;
+            else
+              level--;
+              
+            in.get(c);
+            advanceLoc(currentLoc, c);
+            in.get(c);
+            advanceLoc(currentLoc, c);
+
+            if (level == 0)
+              break;
+          }
+        }
+      }
+      else if (isWhitespace(c))
+      {
+        advanceLoc(currentLoc, c);
+        if (! in.get(c))
+          break;
+      }
+      else
       {
         Token newToken;
         newToken.type = TokenType::Operator;
@@ -175,6 +219,10 @@ namespace Lex
         
         while (in.get(c))
         {
+          if ('/' == c && '/' == in.peek())
+            break;
+          if ('/' == c && '*' == in.peek())
+            break;
           advanceLoc(currentLoc, c);
           if (! isWhitespace(c))
             newToken.str += c;
@@ -182,12 +230,6 @@ namespace Lex
             break;
         }
         result.push_back(newToken);
-      }
-      else
-      {
-        advanceLoc(currentLoc, c);
-        if (! in.get(c))
-          break;
       }
     }
 
