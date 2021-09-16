@@ -12,20 +12,22 @@
 namespace Parse
 {
   struct Word { std::string val; };
+  struct Operator { std::string val; };
   struct String { std::string val; };
   struct Integer { long val; };
   
   using Value = std::variant<
     Word,
+    Operator,
     String,
     Integer
   >;
 
   struct Node
   {
-    Value value;
+    Value primary;
 
-    std::optional<Value> word;
+    std::optional<Value> secondary;
 
     std::optional<std::vector<Node>> parens;
     std::optional<std::vector<Node>> braces;
@@ -42,6 +44,8 @@ namespace Parse
   {
     if (t.type == Lex::TokenType::Word)
       return Word { t.str };
+    else if (t.type == Lex::TokenType::Operator)
+      return Operator { t.str };
     else if (t.type == Lex::TokenType::String)
       return String { t.str };
     else if (t.type == Lex::TokenType::Integer)
@@ -52,55 +56,83 @@ namespace Parse
     return Value();
   }
 
-  Node parseNode(const std::vector<Lex::Token> & tokens, int & index)
+  Node parseNode(const std::vector<Lex::Token> & tokens, int & index, bool parseOp = true)
   {
     Node result;
 
     auto t = tokens[index];
 
-    result.value = parseValue(t);
-
-    index++;
-    t = getNextToken(tokens, index);
-
-    if (t.type == Lex::TokenType::Colon)
-    {
-      index++;
-      t = getNextToken(tokens, index);
-
-      result.word = parseValue(t);
-      index++;
-    }
-
-    t = getNextToken(tokens, index);
-    
     if (t.type == Lex::TokenType::ParenL)
     {
       index++;
-      t = getNextToken(tokens, index);
-  
-      result.parens.emplace();
-      while (tokens[index].type != Lex::TokenType::ParenR)
-        result.parens->push_back(parseNode(tokens, index));
-  
+      result = parseNode(tokens, index);
+      if (tokens[index].type != Lex::TokenType::ParenR)
+        Log::error("Expected ) at %d, %d", tokens[index].loc.row, tokens[index].loc.col);
       index++;
+      t = getNextToken(tokens, index);
+    }
+    else
+    {
+      result.primary = parseValue(t);
+
+      index++;
+      t = getNextToken(tokens, index);
+
+      if (t.type == Lex::TokenType::Colon)
+      {
+        index++;
+        t = getNextToken(tokens, index);
+
+        result.secondary = parseValue(t);
+        index++;
+      }
+
+      t = getNextToken(tokens, index);
+      
+      if (t.type == Lex::TokenType::ParenL)
+      {
+        index++;
+        t = getNextToken(tokens, index);
+    
+        result.parens.emplace();
+        while (tokens[index].type != Lex::TokenType::ParenR)
+          result.parens->push_back(parseNode(tokens, index));
+    
+        index++;
+      }
+
+      t = getNextToken(tokens, index);
+    
+      if (t.type == Lex::TokenType::BraceL)
+      {
+        index++;
+        t = getNextToken(tokens, index);
+
+        result.braces.emplace();
+        while (tokens[index].type != Lex::TokenType::BraceR)
+          result.braces->push_back(parseNode(tokens, index));
+        
+        index++;
+      }
+
+      t = getNextToken(tokens, index);
     }
 
-    t = getNextToken(tokens, index);
-    
-    if (t.type == Lex::TokenType::BraceL)
+    while (parseOp && t.type == Lex::TokenType::Operator)
     {
-      index++;
-      t = getNextToken(tokens, index);
-
-      result.braces.emplace();
-      while (tokens[index].type != Lex::TokenType::BraceR)
-        result.braces->push_back(parseNode(tokens, index));
+      Node l = result;
       
       index++;
+      Node r = parseNode(tokens, index, false);
+
+      result = Node();
+      result.primary = parseValue(t);
+      result.parens.emplace();
+      result.parens->push_back(l);
+      result.parens->push_back(r);
+
+      t = tokens[index];
     }
-
-
 
     return result;
   }

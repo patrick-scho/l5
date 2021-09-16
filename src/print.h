@@ -35,6 +35,8 @@ void printValue(const Parse::Value & value)
 {
   if (std::holds_alternative<Parse::Word>(value))
     std::cout << "W: " << std::get<Parse::Word>(value).val;
+  if (std::holds_alternative<Parse::Operator>(value))
+    std::cout << "O: " << std::get<Parse::Operator>(value).val;
   if (std::holds_alternative<Parse::String>(value))
     std::cout << "S: " << std::get<Parse::String>(value).val;
   if (std::holds_alternative<Parse::Integer>(value))
@@ -43,12 +45,12 @@ void printValue(const Parse::Value & value)
 
 void printNode(const Parse::Node & node)
 {
-  printValue(node.value);
+  printValue(node.primary);
 
-  if (node.word.has_value())
+  if (node.secondary.has_value())
   {
     std::cout << "[";
-    printValue(node.word.value());
+    printValue(node.secondary.value());
     std::cout << "]";
   }
 

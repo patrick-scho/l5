@@ -8,13 +8,13 @@ struct : S1 (S2 S3) {
 
 f1(1 2 3)
 
-if (i "Hallo") {
+if (i == "Hallo") {
   Hallo()
 }
 
-
+getSomething() = 123
 
 var {
-  v1: int
-  v2: double
+  v1: int (1 + 2 - 3 * 4 / 5)
+  v2: double (1 + (3 * 5 - 44) + (88) ~~ ( 1 * ((123 + 123) - 45) ** 7890))
 }
