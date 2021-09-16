@@ -5,16 +5,25 @@
 
 namespace Log
 {
-  void error(const std::string & msg)
+  template<typename ... Ts>
+  void error(const std::string & msg, Ts ...ts)
   {
-    std::cout << msg << std::endl;
+    char buffer[1024];
+    snprintf(buffer, 1024, msg.c_str(), ts...);
+    std::cout << "[ERROR] " << buffer << std::endl;
   }
-  void warning(const std::string & msg)
+  template<typename ... Ts>
+  void warning(const std::string & msg, Ts ...ts)
   {
-    std::cout << msg << std::endl;
+    char buffer[1024];
+    snprintf(buffer, 1024, msg.c_str(), ts...);
+    std::cout << "[WARNING] " << buffer << std::endl;
   }
-  void info(const std::string & msg)
+  template<typename ... Ts>
+  void info(const std::string & msg, Ts ...ts)
   {
-    std::cout << msg << std::endl;
+    char buffer[1024];
+    snprintf(buffer, 1024, msg.c_str(), ts...);
+    std::cout << "[INFO] " << buffer << std::endl;
   }
 }
