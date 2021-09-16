@@ -47,7 +47,7 @@ namespace Parse
     else if (t.type == Lex::TokenType::Integer)
       return Integer { std::atol(t.str.c_str()) };
     else
-      Log::error("Expected Value");
+      Log::error("Expected Value at %d, %d", t.loc.row, t.loc.col);
 
     return Value();
   }
