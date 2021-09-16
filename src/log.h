@@ -10,20 +10,20 @@ namespace Log
   {
     char buffer[1024];
     snprintf(buffer, 1024, msg.c_str(), ts...);
-    std::cout << "[ERROR] " << buffer << std::endl;
+    std::cerr << "[ERROR] " << buffer << std::endl;
   }
   template<typename ... Ts>
   void warning(const std::string & msg, Ts ...ts)
   {
     char buffer[1024];
     snprintf(buffer, 1024, msg.c_str(), ts...);
-    std::cout << "[WARNING] " << buffer << std::endl;
+    std::cerr << "[WARNING] " << buffer << std::endl;
   }
   template<typename ... Ts>
   void info(const std::string & msg, Ts ...ts)
   {
     char buffer[1024];
     snprintf(buffer, 1024, msg.c_str(), ts...);
-    std::cout << "[INFO] " << buffer << std::endl;
+    std::cerr << "[INFO] " << buffer << std::endl;
   }
 }
