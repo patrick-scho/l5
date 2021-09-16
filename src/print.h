@@ -43,33 +43,33 @@ void printValue(const Parse::Value & value)
     std::cout << "I: " << std::get<Parse::Integer>(value).val;
 }
 
-void printNode(const Parse::Node & node)
+void printNode(const Parse::Node * node)
 {
-  printValue(node.primary);
+  printValue(node->primary);
 
-  if (node.secondary.has_value())
+  if (node->secondary.has_value())
   {
     std::cout << "[";
-    printValue(node.secondary.value());
+    printValue(node->secondary.value());
     std::cout << "]";
   }
 
-  if (node.parens.has_value())
+  if (node->parens.has_value())
   {
     std::cout << "(";
-    for (auto n : node.parens.value())
+    for (auto n : node->parens.value())
     {
-      printNode(n);
+      printNode(n.get());
       std::cout << ", ";
     }
     std::cout << ")";
   }
-  if (node.braces.has_value())
+  if (node->braces.has_value())
   {
     std::cout << "{\n";
-    for (auto n : node.braces.value())
+    for (auto n : node->braces.value())
     {
-      printNode(n);
+      printNode(n.get());
       std::cout << "\n";
     }
     std::cout << "}\n";

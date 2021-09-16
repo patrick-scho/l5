@@ -37,7 +37,7 @@ int main(int argc, char **argv)
   auto nodes = Parse::parseNodes(tokens);
   for (auto node : nodes)
   {
-    printNode(node);
+    printNode(node.get());
     std::cout << "\n";
   }
 

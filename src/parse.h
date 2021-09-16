@@ -25,12 +25,14 @@ namespace Parse
 
   struct Node
   {
+    Node * parent;
+
     Value primary;
 
     std::optional<Value> secondary;
 
-    std::optional<std::vector<Node>> parens;
-    std::optional<std::vector<Node>> braces;
+    std::optional<std::vector<std::shared_ptr<Node>>> parens;
+    std::optional<std::vector<std::shared_ptr<Node>>> braces;
   };
 
   Lex::Token getNextToken(const std::vector<Lex::Token> & tokens, int & index)
@@ -56,16 +58,17 @@ namespace Parse
     return Value();
   }
 
-  Node parseNode(const std::vector<Lex::Token> & tokens, int & index, bool parseOp = true)
+  std::shared_ptr<Node> parseNode(const std::vector<Lex::Token> & tokens, int & index, Node * parent, bool parseOp = true)
   {
-    Node result;
+    auto result = std::make_shared<Node>();
+    result->parent = parent;
 
     auto t = tokens[index];
 
     if (t.type == Lex::TokenType::ParenL)
     {
       index++;
-      result = parseNode(tokens, index);
+      result = parseNode(tokens, index, parent);
       if (tokens[index].type != Lex::TokenType::ParenR)
         Log::error("Expected ) at %d, %d", tokens[index].loc.row, tokens[index].loc.col);
       index++;
@@ -73,7 +76,7 @@ namespace Parse
     }
     else
     {
-      result.primary = parseValue(t);
+      result->primary = parseValue(t);
 
       index++;
       t = getNextToken(tokens, index);
@@ -83,7 +86,7 @@ namespace Parse
         index++;
         t = getNextToken(tokens, index);
 
-        result.secondary = parseValue(t);
+        result->secondary = parseValue(t);
         index++;
       }
 
@@ -94,9 +97,9 @@ namespace Parse
         index++;
         t = getNextToken(tokens, index);
     
-        result.parens.emplace();
+        result->parens.emplace();
         while (tokens[index].type != Lex::TokenType::ParenR)
-          result.parens->push_back(parseNode(tokens, index));
+          result->parens->push_back(parseNode(tokens, index, result.get()));
     
         index++;
       }
@@ -108,9 +111,9 @@ namespace Parse
         index++;
         t = getNextToken(tokens, index);
 
-        result.braces.emplace();
+        result->braces.emplace();
         while (tokens[index].type != Lex::TokenType::BraceR)
-          result.braces->push_back(parseNode(tokens, index));
+          result->braces->push_back(parseNode(tokens, index, result.get()));
         
         index++;
       }
@@ -122,20 +125,25 @@ namespace Parse
     {
       while (t.type == Lex::TokenType::Operator)
       {
-        Node l = result;
+        Node * oldParent = result->parent;
+
+        auto l = result;
         
         index++;
-        Node r;
+        std::shared_ptr<Node> r;
         if (t.str == "=")
-          r = parseNode(tokens, index, true);
+          r = parseNode(tokens, index, parent, true);
         else
-          r = parseNode(tokens, index, false);
+          r = parseNode(tokens, index, parent, false);
 
-        result = Node();
-        result.primary = parseValue(t);
-        result.parens.emplace();
-        result.parens->push_back(l);
-        result.parens->push_back(r);
+        result = std::make_shared<Node>();
+        result->parent = oldParent;
+        l->parent = result.get();
+        r->parent = result.get();
+        result->primary = parseValue(t);
+        result->parens.emplace();
+        result->parens->push_back(l);
+        result->parens->push_back(r);
 
         t = tokens[index];
       }
@@ -144,14 +152,14 @@ namespace Parse
     return result;
   }
 
-  std::vector<Node> parseNodes(const std::vector<Lex::Token> & tokens)
+  std::vector<std::shared_ptr<Node>> parseNodes(const std::vector<Lex::Token> & tokens)
   {
-    std::vector<Node> result;
+    std::vector<std::shared_ptr<Node>> result;
 
     int i = 0;
     while (i < tokens.size())
     {
-      auto node = Parse::parseNode(tokens, i);
+      auto node = Parse::parseNode(tokens, i, nullptr);
       result.push_back(node);
     }
 
