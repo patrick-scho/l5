@@ -125,7 +125,11 @@ namespace Parse
         Node l = result;
         
         index++;
-        Node r = parseNode(tokens, index, false);
+        Node r;
+        if (t.str == "=")
+          r = parseNode(tokens, index, true);
+        else
+          r = parseNode(tokens, index, false);
 
         result = Node();
         result.primary = parseValue(t);

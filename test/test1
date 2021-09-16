@@ -16,7 +16,7 @@ if (i == "Hallo") {
 
 /* Hallo /* Ollah */ */
 
-getSomething() = 123
+getSomething() .. "LL" = 123 ** 4
 
 var {
   v1: int (1 + 2 - 3 * 4 / 5)
