@@ -21,6 +21,7 @@ void printTokens(const std::vector<Lex::Token> & tokens)
     if (t.type == Lex::TokenType::BraceR)    std::cout << "BraceR";
     if (t.type == Lex::TokenType::Comma)     std::cout << "Comma";
     if (t.type == Lex::TokenType::Semicolon) std::cout << "Semicolon";
+    if (t.type == Lex::TokenType::Colon)     std::cout << "Colon";
     if (t.type == Lex::TokenType::Word)      std::cout << "Word";
     if (t.type == Lex::TokenType::Integer)   std::cout << "Integer";
     if (t.type == Lex::TokenType::Operator)  std::cout << "Operator";
