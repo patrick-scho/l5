@@ -33,14 +33,15 @@ void printTokens(const std::vector<Lex::Token> & tokens)
 
 void printValue(const Parse::Value & value)
 {
+  bool printType = false;
   if (std::holds_alternative<Parse::Word>(value))
-    std::cout << "W: " << std::get<Parse::Word>(value).val;
+    std::cout << (printType ? "W: " : "") << std::get<Parse::Word>(value).val;
   if (std::holds_alternative<Parse::Operator>(value))
-    std::cout << "O: " << std::get<Parse::Operator>(value).val;
+    std::cout << (printType ? "O: " : "") << std::get<Parse::Operator>(value).val;
   if (std::holds_alternative<Parse::String>(value))
-    std::cout << "S: " << std::get<Parse::String>(value).val;
+    std::cout << (printType ? "S: " : "") << std::get<Parse::String>(value).val;
   if (std::holds_alternative<Parse::Integer>(value))
-    std::cout << "I: " << std::get<Parse::Integer>(value).val;
+    std::cout << (printType ? "I: " : "") << std::get<Parse::Integer>(value).val;
 }
 
 void printNode(const Parse::Node * node)

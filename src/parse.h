@@ -147,6 +147,10 @@ namespace Parse
 
         t = tokens[index];
       }
+      if (t.type == Lex::TokenType::Semicolon)
+      {
+        index++;
+      }
     }
 
     return result;

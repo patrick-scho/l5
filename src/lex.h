@@ -25,17 +25,8 @@ namespace Lex
     }
   }
 
-  const char punctuation[] = {
-    '(',
-    ')',
-    '[',
-    ']',
-    '{',
-    '}',
-    ',',
-    ';',
-    ':',
-  };
+  const char punctuationChars[] = "()[]{},;:";
+  const char operatorChars[] = ".+-*/<>|^°!%&?=~";
   enum class TokenType
   {
     ParenL , ParenR, BracketL, BracketR, BraceL, BraceR,
@@ -79,7 +70,7 @@ namespace Lex
 
   bool isPunctuation(int c)
   {
-    for (char p : punctuation)
+    for (char p : punctuationChars)
       if (c == p)
         return true;
     return false;
@@ -88,10 +79,18 @@ namespace Lex
   Token getPunctuationToken(int c)
   {
     Token result;
-    for (int i = 0; i < sizeof(punctuation); i++)
-      if (c == punctuation[i])
+    for (int i = 0; i < sizeof(punctuationChars); i++)
+      if (c == punctuationChars[i])
         result.type = (TokenType)i;
     return result;
+  }
+
+  bool isOperator(int c)
+  {
+    for (char o : operatorChars)
+      if (c == o)
+        return true;
+    return false;
   }
 
   
@@ -210,7 +209,7 @@ namespace Lex
         if (! in.get(c))
           break;
       }
-      else
+      else if (isOperator(c))
       {
         Token newToken;
         newToken.type = TokenType::Operator;
@@ -224,7 +223,7 @@ namespace Lex
           if ('/' == c && '*' == in.peek())
             break;
           advanceLoc(currentLoc, c);
-          if (! isWhitespace(c))
+          if (isOperator(c))
             newToken.str += c;
           else
             break;

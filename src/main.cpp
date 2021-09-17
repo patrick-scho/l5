@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     std::cout << "\n";
   }
 
-  //auto result = interp::interp(ast);
+  Interp::interp(nodes);
 
   return 0;
 }
