@@ -40,6 +40,48 @@ namespace Parse
     return tokens[index];
   }
 
+
+
+
+  static std::vector<std::string> operatorPrecedence = {
+    "+", "*"
+  };
+
+  int getOperatorPrecedence(const std::string & op)
+  {
+    for (int i = 0; i < operatorPrecedence.size(); i++)
+    {
+      if (operatorPrecedence[i] == op)
+        return i;
+    }
+    return -1;
+  }
+
+  void checkOperatorPrecedence(std::shared_ptr<Node> node)
+  {
+    int p1 = getOperatorPrecedence(std::get<Parse::Operator>(node->parens.value()[0]->primary).val);
+    int p2 = getOperatorPrecedence(std::get<Parse::Operator>(node->primary).val);
+
+    if (p1 < p2)
+    {
+      auto tmp = node->primary;
+      node->primary = node->parens.value()[0]->primary;
+      node->parens.value()[0]->primary = tmp;
+
+      auto tmp1 = node->parens.value()[0];
+      node->parens.value()[0] = node->parens.value()[1];
+      node->parens.value()[1] = tmp1;
+
+      auto tmp2 = node->parens.value()[0];
+      node->parens.value()[0] = node->parens.value()[1]->parens.value()[0];
+      node->parens.value()[1]->parens.value()[0] = node->parens.value()[1]->parens.value()[1];
+      node->parens.value()[1]->parens.value()[1] = tmp2;
+    }
+  }
+
+
+
+
   Value parseValue(Lex::Token t)
   {
     if (t.type == Lex::TokenType::Word)
@@ -142,6 +184,11 @@ namespace Parse
           result->parens.emplace();
           result->parens->push_back(l);
           result->parens->push_back(r);
+
+          if (std::holds_alternative<Parse::Operator>(l->primary) && l->parens.value().size() == 2)
+          {
+            checkOperatorPrecedence(result);
+          }
 
           t = tokens[index];
         }
