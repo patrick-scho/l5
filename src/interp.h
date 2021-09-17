@@ -27,15 +27,15 @@ namespace Interp
   {
     Variable result;
     result.name = std::get<Parse::Word>(node->primary).val;
-    if (node->secondary.has_value())
-      result.type = std::get<Parse::Word>(node->secondary.value()).val;
+    // if (node->secondary.has_value())
+    //   result.type = std::get<Parse::Word>(node->secondary.value()).val;
     return result;
   }
   Function getFunction(Parse::Node * node)
   {
     
     Function f;
-    f.name = std::get<Parse::Word>(node->secondary.value()).val;
+    // f.name = std::get<Parse::Word>(node->secondary.value()).val;
     for (auto p : node->parens.value())
     {
       f.parameters.push_back(getVariable(p.get()));

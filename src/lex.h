@@ -25,12 +25,12 @@ namespace Lex
     }
   }
 
-  const char punctuationChars[] = "()[]{},;:";
-  const char operatorChars[] = ".+-*/<>|^°!%&?=~";
+  const char punctuationChars[] = "()[]{},;";
+  const char operatorChars[] = ".+-*/<>|^°!%&?=~:";
   enum class TokenType
   {
     ParenL , ParenR, BracketL, BracketR, BraceL, BraceR,
-    Comma, Semicolon, Colon,
+    Comma, Semicolon,
     Word, Integer, Operator, String,
     None,
   };

@@ -21,7 +21,6 @@ void printTokens(const std::vector<Lex::Token> & tokens)
     if (t.type == Lex::TokenType::BraceR)    std::cout << "BraceR";
     if (t.type == Lex::TokenType::Comma)     std::cout << "Comma";
     if (t.type == Lex::TokenType::Semicolon) std::cout << "Semicolon";
-    if (t.type == Lex::TokenType::Colon)     std::cout << "Colon";
     if (t.type == Lex::TokenType::Word)      std::cout << "Word";
     if (t.type == Lex::TokenType::Integer)   std::cout << "Integer";
     if (t.type == Lex::TokenType::Operator)  std::cout << "Operator";
@@ -36,8 +35,6 @@ void printValue(const Parse::Value & value)
   bool printType = false;
   if (std::holds_alternative<Parse::Word>(value))
     std::cout << (printType ? "W: " : "") << std::get<Parse::Word>(value).val;
-  if (std::holds_alternative<Parse::Operator>(value))
-    std::cout << (printType ? "O: " : "") << std::get<Parse::Operator>(value).val;
   if (std::holds_alternative<Parse::String>(value))
     std::cout << (printType ? "S: " : "") << std::get<Parse::String>(value).val;
   if (std::holds_alternative<Parse::Integer>(value))
@@ -46,14 +43,34 @@ void printValue(const Parse::Value & value)
 
 void printNode(const Parse::Node * node)
 {
-  printValue(node->primary);
-
-  if (node->secondary.has_value())
+  if (std::holds_alternative<Parse::Operator>(node->primary))
   {
-    std::cout << "[";
-    printValue(node->secondary.value());
-    std::cout << "]";
+    if (node->parens.value().size() == 2)
+    {
+      if (std::get<Parse::Operator>(node->primary).val == "[]")
+      {
+        printNode(node->parens.value()[0].get());
+        std::cout << "[";
+        printNode(node->parens.value()[1].get());
+        std::cout << "]";
+      }
+      else
+      {
+        std::cout << "(";
+        printNode(node->parens.value()[0].get());
+        std::cout << std::get<Parse::Operator>(node->primary).val;
+        printNode(node->parens.value()[1].get());
+        std::cout << ")";
+      }
+    }
+    else
+    {
+      std::cout << std::get<Parse::Operator>(node->primary).val;
+      printNode(node->parens.value()[0].get());
+    }
+    return;
   }
+  printValue(node->primary);
 
   if (node->parens.has_value())
   {
