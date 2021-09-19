@@ -43,16 +43,20 @@ namespace Parse
 
 
 
-  static std::vector<std::string> operatorPrecedence = {
-    "+", "*"
+  static std::vector<std::vector<std::string>> operatorPrecedence = {
+    {"=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", "&=", "^=", "|="},
+    {"||"}, {"&&"}, {"|"}, {"^"}, {"&"},
+    {"==", "!="}, {"<", ">", "<=", ">="},
+    {"<<", ">>"}, {"+", "-"}, {"*", "/", "%"}, {"."}
   };
 
   int getOperatorPrecedence(const std::string & op)
   {
     for (int i = 0; i < operatorPrecedence.size(); i++)
     {
-      if (operatorPrecedence[i] == op)
-        return i;
+      for (int j = 0; j < operatorPrecedence[i].size(); j++)
+        if (operatorPrecedence[i][j] == op)
+          return i;
     }
     return -1;
   }
@@ -64,18 +68,12 @@ namespace Parse
 
     if (p1 < p2)
     {
-      auto tmp = node->primary;
-      node->primary = node->parens.value()[0]->primary;
-      node->parens.value()[0]->primary = tmp;
+      std::swap(node->primary, node->parens.value()[0]->primary);
 
-      auto tmp1 = node->parens.value()[0];
-      node->parens.value()[0] = node->parens.value()[1];
-      node->parens.value()[1] = tmp1;
+      std::swap(node->parens.value()[0], node->parens.value()[1]);
 
-      auto tmp2 = node->parens.value()[0];
-      node->parens.value()[0] = node->parens.value()[1]->parens.value()[0];
-      node->parens.value()[1]->parens.value()[0] = node->parens.value()[1]->parens.value()[1];
-      node->parens.value()[1]->parens.value()[1] = tmp2;
+      std::swap(node->parens.value()[0], node->parens.value()[1]->parens.value()[0]);
+      std::swap(node->parens.value()[1]->parens.value()[0], node->parens.value()[1]->parens.value()[1]);
     }
   }
 
@@ -105,15 +103,19 @@ namespace Parse
 
     auto t = tokens[index];
 
+    // parenthesized expr
     if (t.type == Lex::TokenType::ParenL)
     {
       index++;
-      result = parseNode(tokens, index, parent);
+      result->primary = Operator { "()" };
+      result->parens.emplace();
+      result->parens->push_back(parseNode(tokens, index, parent));
       if (tokens[index].type != Lex::TokenType::ParenR)
         Log::error("Expected ) at %d, %d", tokens[index].loc.row, tokens[index].loc.col);
       index++;
       t = getNextToken(tokens, index);
     }
+    // prefix op
     else if (t.type == Lex::TokenType::Operator)
     {
       index++;
@@ -122,13 +124,16 @@ namespace Parse
       result->parens->push_back(parseNode(tokens, index, parent));
       t = getNextToken(tokens, index);
     }
+    // regular expr
     else
     {
+      // single value
       result->primary = parseValue(t);
 
       index++;
       t = getNextToken(tokens, index);
       
+      // ( ... )
       if (t.type == Lex::TokenType::ParenL)
       {
         index++;
@@ -143,6 +148,7 @@ namespace Parse
 
       t = getNextToken(tokens, index);
     
+      // { ... }
       if (t.type == Lex::TokenType::BraceL)
       {
         index++;
@@ -158,33 +164,37 @@ namespace Parse
       t = getNextToken(tokens, index);
     }
 
+    // chained operators
     if (parseOp)
     {
       while (t.type == Lex::TokenType::Operator ||
              t.type == Lex::TokenType::BracketL)
       {
+        // infix op
         if (t.type == Lex::TokenType::Operator)
         {
           Node * oldParent = result->parent;
+          auto op_token = t;
 
           auto l = result;
-          
           index++;
-          std::shared_ptr<Node> r;
-          if (t.str == "=")
-            r = parseNode(tokens, index, parent, true);
-          else
-            r = parseNode(tokens, index, parent, false);
+          auto r = parseNode(tokens, index, parent, false);
 
           result = std::make_shared<Node>();
+          // correct parent for new Node
           result->parent = oldParent;
+          // parent for sub exprs
           l->parent = result.get();
           r->parent = result.get();
-          result->primary = parseValue(t);
+          // get Value from Token
+          result->primary = parseValue(op_token);
+          // add sub exprs
           result->parens.emplace();
           result->parens->push_back(l);
           result->parens->push_back(r);
 
+          // if left sub expr is also infix operator
+          // check precedence
           if (std::holds_alternative<Parse::Operator>(l->primary) && l->parens.value().size() == 2)
           {
             checkOperatorPrecedence(result);
@@ -192,14 +202,14 @@ namespace Parse
 
           t = tokens[index];
         }
+        // bracket expr[]
         else if (t.type == Lex::TokenType::BracketL)
         {
           Node * oldParent = result->parent;
 
           auto l = result;
-          
           index++;
-          std::shared_ptr<Node> r = parseNode(tokens, index, parent);
+          auto r = parseNode(tokens, index, parent);
 
           result = std::make_shared<Node>();
           result->parent = oldParent;

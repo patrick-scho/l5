@@ -105,6 +105,7 @@ namespace Lex
 
     while (in.good())
     {
+      // punctuation
       if (isPunctuation(c))
       {
         Token newToken = getPunctuationToken(c);
@@ -115,6 +116,7 @@ namespace Lex
           break;
         advanceLoc(currentLoc, c);
       }
+      // word
       else if (isFirstWord(c))
       {
         Token newToken;
@@ -131,6 +133,7 @@ namespace Lex
         }
         result.push_back(newToken);
       }
+      // number
       else if (isNumber(c))
       {
         Token newToken;
@@ -147,6 +150,7 @@ namespace Lex
         }
         result.push_back(newToken);
       }
+      // string
       else if ('"' == c)
       {
         Token newToken;
@@ -165,6 +169,7 @@ namespace Lex
         advanceLoc(currentLoc, c);
         result.push_back(newToken);
       }
+      // single line comment
       else if ('/' == c && '/' == in.peek())
       {
         in.get(c);
@@ -176,6 +181,7 @@ namespace Lex
             break;
         }
       }
+      // multi line comment
       else if ('/' == c && '*' == in.peek())
       {
         int level = 1;
@@ -203,12 +209,7 @@ namespace Lex
           }
         }
       }
-      else if (isWhitespace(c))
-      {
-        advanceLoc(currentLoc, c);
-        if (! in.get(c))
-          break;
-      }
+      // operators
       else if (isOperator(c))
       {
         Token newToken;
@@ -218,6 +219,7 @@ namespace Lex
         
         while (in.get(c))
         {
+          // somethins like 1 <//> 2 is also a comment and not an op
           if ('/' == c && '/' == in.peek())
             break;
           if ('/' == c && '*' == in.peek())
@@ -229,6 +231,12 @@ namespace Lex
             break;
         }
         result.push_back(newToken);
+      }
+      else if (isWhitespace(c))
+      {
+        advanceLoc(currentLoc, c);
+        if (! in.get(c))
+          break;
       }
     }
 

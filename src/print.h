@@ -45,9 +45,12 @@ void printNode(const Parse::Node * node)
 {
   if (std::holds_alternative<Parse::Operator>(node->primary))
   {
+    auto primary = std::get<Parse::Operator>(node->primary);
+    // infix operators
     if (node->parens.value().size() == 2)
     {
-      if (std::get<Parse::Operator>(node->primary).val == "[]")
+      // special case bracket
+      if (primary.val == "[]")
       {
         printNode(node->parens.value()[0].get());
         std::cout << "[";
@@ -58,14 +61,19 @@ void printNode(const Parse::Node * node)
       {
         std::cout << "(";
         printNode(node->parens.value()[0].get());
-        std::cout << std::get<Parse::Operator>(node->primary).val;
+        std::cout << " ";
+        std::cout << primary.val;
+        std::cout << " ";
         printNode(node->parens.value()[1].get());
         std::cout << ")";
       }
     }
-    else
+    // prefix operators
+    else if (node->parens.value().size() == 1)
     {
-      std::cout << std::get<Parse::Operator>(node->primary).val;
+      // ignore parens
+      if (primary.val != "()")
+        std::cout << primary.val;
       printNode(node->parens.value()[0].get());
     }
     return;
